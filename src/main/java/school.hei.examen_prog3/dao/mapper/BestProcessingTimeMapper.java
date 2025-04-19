@@ -11,24 +11,22 @@ import java.sql.SQLException;
 import java.util.function.Function;
 
 @Component
+@RequiredArgsConstructor
 public class BestProcessingTimeMapper implements Function<ResultSet, BestProcessingTime> {
-    private final BestProcessingTimeElementCrud bestProcessingTimeElementCrud;
+    private final BestProcessingTimeElementCrud elementCrud;
 
-    public BestProcessingTimeMapper(BestProcessingTimeElementCrud bestProcessingTimeElementCrud) {
-        this.bestProcessingTimeElementCrud = bestProcessingTimeElementCrud;
-    }
-
-    @SneakyThrows
     @Override
+    @SneakyThrows
     public BestProcessingTime apply(ResultSet resultSet) {
-        try{
+        try {
+            Long id = resultSet.getLong("id_processing_time");
             return new BestProcessingTime(
-                    resultSet.getLong("id_processing_time"),
+                    id,
                     resultSet.getTimestamp("update_at").toInstant(),
-                    bestProcessingTimeElementCrud.findByIdProcessingTime(resultSet.getLong("id_processing_time"))
+                    elementCrud.findByIdProcessingTime(id)
             );
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error mapping BestProcessingTime", e);
         }
     }
 }

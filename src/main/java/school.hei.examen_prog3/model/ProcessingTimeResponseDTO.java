@@ -1,5 +1,6 @@
 package school.hei.examen_prog3.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -7,21 +8,20 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
-@EqualsAndHashCode
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ProcessingTimeResponseDTO {
-    @JsonProperty("dishIdentifier")
-    private Long dishIdentifier;
+    @JsonProperty(value = "dishIdentifier")
+    private Integer dishIdentifier;
 
     @JsonProperty("dishName")
     private String dishName;
 
     @JsonProperty("preparationDuration")
-    private double preparationDuration;
-
-    @JsonProperty("durationUnit")
-    private String durationUnit;
+    private Double preparationDuration;
 
     @JsonProperty("salesPoint")
     private String salesPoint;
+
+    @JsonProperty(value = "durationUnit", defaultValue = "SECONDS")
+    private String durationUnit;
 }

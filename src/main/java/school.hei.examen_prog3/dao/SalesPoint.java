@@ -1,11 +1,9 @@
 package school.hei.examen_prog3.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Repository;
-import school.hei.examen_prog3.controller.rest.BestProcessingTimeElementRest;
-import school.hei.examen_prog3.controller.rest.BestProcessingTimeRest;
-import school.hei.examen_prog3.controller.mapper.BestProcessingTimeElementRestMapper;
 import school.hei.examen_prog3.model.*;
 
 import java.io.IOException;
@@ -58,18 +56,72 @@ public class SalesPoint {
         List<BestProcessingTimeElement> allProcessingTimes = new ArrayList<>();
 
         try {
-            allProcessingTimes.addAll(getProcessingTimesFromPDV("https://ad67-197-158-81-35.ngrok-free.app"));
+            allProcessingTimes.addAll(getProcessingTimesFromPDV("http://localhost:8080", "Analamahitsy"));
         } catch (Exception e) {
             System.err.println("Error fetching from PDV1: " + e.getMessage());
         }
 
         try {
-            allProcessingTimes.addAll(getProcessingTimesFromPDV("https://ed2d-197-158-81-35.ngrok-free.app"));
+            allProcessingTimes.addAll(getProcessingTimesFromPDV("http://localhost:8082", "Antanimena"));
         } catch (Exception e) {
             System.err.println("Error fetching from PDV2: " + e.getMessage());
         }
 
         return new BestProcessingTime(1L, start, allProcessingTimes);
+    }
+
+    private List<BestProcessingTimeElement> getProcessingTimesFromPDV(String baseUrl, String salesPointName) {
+        HttpClient client = HttpClient.newHttpClient();
+        List<BestProcessingTimeElement> processingTimes = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        for (int dishId = 1; dishId <= 3; dishId++) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(baseUrl + "/dishes/" + dishId + "/processingTimes"))
+                        .header("X-API-KEY", API_KEY)
+                        .GET()
+                        .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200 && !response.body().isBlank()) {
+                    try {
+                        List<ProcessingTimeResponseDTO> dtos = mapper.readValue(
+                                response.body(),
+                                new TypeReference<>() {});
+
+                        for (ProcessingTimeResponseDTO dto : dtos) {
+                            if (dto.getPreparationDuration() == null) continue;
+
+                            BestProcessingTimeElement element = new BestProcessingTimeElement(
+                                    null,
+                                    dto.getSalesPoint() != null ? dto.getSalesPoint() : salesPointName,
+                                    dto.getDishName() != null ? dto.getDishName() : "Dish " + dishId,
+                                    dto.getPreparationDuration(),
+                                    parseDurationUnit(dto.getDurationUnit())
+                            );
+                            processingTimes.add(element);
+                        }
+                    } catch (Exception e) {
+                        System.err.printf("Error parsing response for dish %d: %s%n", dishId, e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.printf("Error fetching dish %d: %s%n", dishId, e.getMessage());
+            }
+        }
+        return processingTimes;
+    }
+
+    private DurationUnit parseDurationUnit(String unit) {
+        if (unit == null) return DurationUnit.SECONDS;
+        try {
+            return DurationUnit.valueOf(unit.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return DurationUnit.SECONDS;
+        }
     }
 
     private List<DishSold> getDishSoldFromPDV(String url) throws IOException, InterruptedException {
@@ -90,44 +142,6 @@ public class SalesPoint {
         }
     }
 
-    private List<BestProcessingTimeElement> getProcessingTimesFromPDV(String baseUrl)
-            throws IOException, InterruptedException, URISyntaxException {
-
-        HttpClient client = HttpClient.newHttpClient();
-        List<BestProcessingTimeElement> allProcessingTimes = new ArrayList<>();
-
-        for (int dishId = 1; dishId <= 3; dishId++) {
-            try {
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(new URI(baseUrl + "/dishes/" + dishId + "/bestProcessingTime"))
-                        .header("X-API-KEY", API_KEY)
-                        .GET()
-                        .build();
-
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-                if (response.statusCode() == 200) {
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    BestProcessingTimeRest processingTime = objectMapper.readValue(response.body(), BestProcessingTimeRest.class);
-
-                    for (BestProcessingTimeElementRest elementRest : processingTime.getBestProcessingTimes()) {
-                        BestProcessingTimeElement element = new BestProcessingTimeElement(
-                                null,
-                                elementRest.getSalesPoint(),
-                                getDishNameById(String.valueOf(dishId)),
-                                elementRest.getPreparationDuration(),
-                                elementRest.getDurationUnit()
-                        );
-                        allProcessingTimes.add(element);
-                    }
-                }
-            } catch (Exception e) {
-                System.err.println("Error fetching processing times for dish " + dishId + ": " + e.getMessage());
-            }
-        }
-        return allProcessingTimes;
-    }
-
     private String getDishNameById(String dishId) {
         return switch (dishId) {
             case "1" -> "Hot dog";
@@ -139,7 +153,7 @@ public class SalesPoint {
 
     private BestProcessingTimeElement convertToBestProcessingTimeElement(ProcessingTimeResponseDTO dto) {
         return new BestProcessingTimeElement(
-                dto.getDishIdentifier(),
+                (long) dto.getDishIdentifier(),
                 dto.getSalesPoint(),
                 dto.getDishName(),
                 dto.getPreparationDuration(),

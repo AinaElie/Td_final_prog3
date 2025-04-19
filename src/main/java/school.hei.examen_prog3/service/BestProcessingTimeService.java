@@ -1,6 +1,7 @@
 package school.hei.examen_prog3.service;
 
 import org.springframework.stereotype.Service;
+import school.hei.examen_prog3.controller.mapper.BestProcessingTimeElementRestMapper;
 import school.hei.examen_prog3.controller.mapper.BestProcessingTimeRestMapper;
 import school.hei.examen_prog3.controller.rest.BestProcessingTimeRest;
 import school.hei.examen_prog3.dao.SalesPoint;
@@ -12,9 +13,12 @@ import school.hei.examen_prog3.model.DurationUnit;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.sun.org.apache.bcel.internal.classfile.JavaClass.getComparator;
 
 @Service
 public class BestProcessingTimeService {
@@ -22,50 +26,46 @@ public class BestProcessingTimeService {
     private final BestProcessingTimeElementCrud elementCrud;
     private final BestProcessingTimeRestMapper mapper;
     private final SalesPoint salesPoint;
+    private final BestProcessingTimeElementRestMapper bestProcessingTimeElementRestMapper;
 
-    public BestProcessingTimeService(BestProcessingTimeCrud bestProcessingTimeCrud,
-                                     BestProcessingTimeElementCrud elementCrud,
-                                     BestProcessingTimeRestMapper mapper,
-                                     SalesPoint salesPoint) {
+    public BestProcessingTimeService(BestProcessingTimeCrud bestProcessingTimeCrud, BestProcessingTimeElementCrud elementCrud, BestProcessingTimeRestMapper mapper, SalesPoint salesPoint,
+                                     BestProcessingTimeElementRestMapper bestProcessingTimeElementRestMapper) {
         this.bestProcessingTimeCrud = bestProcessingTimeCrud;
         this.elementCrud = elementCrud;
         this.mapper = mapper;
         this.salesPoint = salesPoint;
+        this.bestProcessingTimeElementRestMapper = bestProcessingTimeElementRestMapper;
     }
 
-    public BestProcessingTimeRest getBestProcessingTime(String dishId, int top, String durationUnit, String calculationMode)
-            throws IOException, InterruptedException, URISyntaxException {
+    public BestProcessingTimeRest getBestProcessingTime(String dishId, int top, String durationUnit, String calculationMode) {
+        BestProcessingTime latest = bestProcessingTimeCrud.findLatest()
+                .orElseThrow(() -> new RuntimeException("No processing time data available"));
 
-        BestProcessingTime bestProcessingTime = salesPoint.getBestProcessingTimesPDV();
-
-        List<BestProcessingTimeElement> filteredElements = bestProcessingTime.getBestProcessingTimes().stream()
+        List<BestProcessingTimeElement> filteredElements = latest.getBestProcessingTimes().stream()
                 .filter(e -> e.getDish().equalsIgnoreCase(getDishNameById(dishId)))
                 .collect(Collectors.toList());
-
-        if (filteredElements.isEmpty()) {
-            return new BestProcessingTimeRest(bestProcessingTime.getUpdateAt(), List.of());
-        }
-
-        Comparator<BestProcessingTimeElement> comparator = switch (calculationMode.toUpperCase()) {
-            case "MINIMUM" -> Comparator.comparingDouble(BestProcessingTimeElement::getPreparationDuration);
-            case "MAXIMUM" -> Comparator.comparingDouble(BestProcessingTimeElement::getPreparationDuration).reversed();
-            default -> Comparator.comparingDouble(BestProcessingTimeElement::getPreparationDuration);
-        };
-
-        filteredElements.sort(comparator);
 
         DurationUnit targetUnit = DurationUnit.valueOf(durationUnit.toUpperCase());
         filteredElements.forEach(e -> convertDuration(e, targetUnit));
 
+        filteredElements.sort(getComparator(calculationMode));
+
         if (filteredElements.size() > top) {
             filteredElements = filteredElements.subList(0, top);
         }
+        
+        return new BestProcessingTimeRest(
+                latest.getUpdateAt(),
+                bestProcessingTimeElementRestMapper.applyAll(filteredElements)
+        );
+    }
 
-        return mapper.apply(new BestProcessingTime(
-                bestProcessingTime.getId(),
-                bestProcessingTime.getUpdateAt(),
-                filteredElements
-        ));
+    private Comparator<BestProcessingTimeElement> getComparator(String calculationMode) {
+        return switch (calculationMode.toUpperCase()) {
+            case "MINIMUM" -> Comparator.comparingDouble(BestProcessingTimeElement::getPreparationDuration);
+            case "MAXIMUM" -> Comparator.comparingDouble(BestProcessingTimeElement::getPreparationDuration).reversed();
+            default -> Comparator.comparingDouble(BestProcessingTimeElement::getPreparationDuration);
+        };
     }
 
     private String getDishNameById(String dishId) {
@@ -73,7 +73,7 @@ public class BestProcessingTimeService {
             case "1" -> "Hot dog";
             case "2" -> "Omelette";
             case "3" -> "Saucisse frit";
-            default -> "";
+            default -> throw new IllegalArgumentException("Unknown dish id: " + dishId);
         };
     }
 
@@ -100,8 +100,10 @@ public class BestProcessingTimeService {
         BestProcessingTime bestProcessingTime = salesPoint.getBestProcessingTimesPDV();
         BestProcessingTime savedProcessingTime = bestProcessingTimeCrud.create(bestProcessingTime);
 
-        for (BestProcessingTimeElement element : bestProcessingTime.getBestProcessingTimes()) {
-            elementCrud.create(element, savedProcessingTime.getId());
+        if (bestProcessingTime.getBestProcessingTimes() != null) {
+            for (BestProcessingTimeElement element : bestProcessingTime.getBestProcessingTimes()) {
+                elementCrud.create(element, savedProcessingTime.getId());
+            }
         }
     }
 
