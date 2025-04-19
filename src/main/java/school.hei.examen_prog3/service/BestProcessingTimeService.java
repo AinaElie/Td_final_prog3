@@ -7,6 +7,7 @@ import school.hei.examen_prog3.dao.SalesPoint;
 import school.hei.examen_prog3.dao.operations.BestProcessingTimeCrud;
 import school.hei.examen_prog3.dao.operations.BestProcessingTimeElementCrud;
 import school.hei.examen_prog3.model.BestProcessingTime;
+import school.hei.examen_prog3.model.BestProcessingTimeElement;
 import school.hei.examen_prog3.model.DurationUnit;
 
 import java.io.IOException;
@@ -91,8 +92,15 @@ public class BestProcessingTimeService {
     }
 
     public void synchronize() throws IOException, InterruptedException, URISyntaxException {
+        clearData();
+
         BestProcessingTime bestProcessingTime = salesPoint.getBestProcessingTimesPDV();
-        bestProcessingTimeCrud.create(bestProcessingTime);
+
+        BestProcessingTime savedProcessingTime = bestProcessingTimeCrud.create(bestProcessingTime);
+        
+        for (BestProcessingTimeElement element : bestProcessingTime.getBestProcessingTimes()) {
+            elementCrud.create(element, savedProcessingTime.getId());
+        }
     }
 
     public void clearData() {

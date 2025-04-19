@@ -3,6 +3,9 @@ package school.hei.examen_prog3.dao;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Repository;
+import school.hei.examen_prog3.controller.rest.BestProcessingTimeElementRest;
+import school.hei.examen_prog3.controller.rest.BestProcessingTimeRest;
+import school.hei.examen_prog3.controller.mapper.BestProcessingTimeElementRestMapper;
 import school.hei.examen_prog3.model.*;
 
 import java.io.IOException;
@@ -25,7 +28,7 @@ public class SalesPoint {
 
         List<DishSold> salesPDV1 = getDishSoldFromPDV("https://ad67-197-158-81-35.ngrok-free.app/sales");
         List<DishSold> salesPDV2 = getDishSoldFromPDV("https://ed2d-197-158-81-35.ngrok-free.app/sales");
-        
+
         SalesElement salesElement1 = new SalesElement(1L, "Analamahitsy", salesPDV1);
         SalesElement salesElement2 = new SalesElement(2L, "Antanimena", salesPDV2);
 
@@ -34,15 +37,19 @@ public class SalesPoint {
 
     public BestProcessingTime getBestProcessingTimesPDV() throws IOException, InterruptedException, URISyntaxException {
         Instant start = Instant.now();
-
-        List<BestProcessingTimeElement> processingTimesPDV1 =
-                getProcessingTimesFromPDV("https://ad67-197-158-81-35.ngrok-free.app/processing-times");
-        List<BestProcessingTimeElement> processingTimesPDV2 =
-                getProcessingTimesFromPDV("https://ed2d-197-158-81-35.ngrok-free.app/processing-times");
-
         List<BestProcessingTimeElement> allProcessingTimes = new ArrayList<>();
-        allProcessingTimes.addAll(processingTimesPDV1);
-        allProcessingTimes.addAll(processingTimesPDV2);
+
+        try {
+            allProcessingTimes.addAll(getProcessingTimesFromPDV("https://ad67-197-158-81-35.ngrok-free.app"));
+        } catch (Exception e) {
+            System.err.println("Error fetching from PDV1: " + e.getMessage());
+        }
+
+        try {
+            allProcessingTimes.addAll(getProcessingTimesFromPDV("https://ed2d-197-158-81-35.ngrok-free.app"));
+        } catch (Exception e) {
+            System.err.println("Error fetching from PDV2: " + e.getMessage());
+        }
 
         return new BestProcessingTime(1L, start, allProcessingTimes);
     }
@@ -65,35 +72,45 @@ public class SalesPoint {
         }
     }
 
-    private List<BestProcessingTimeElement> getProcessingTimesFromPDV(String url)
+    private List<BestProcessingTimeElement> getProcessingTimesFromPDV(String baseUrl)
             throws IOException, InterruptedException, URISyntaxException {
 
         HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI(url))
-                .header("X-API-KEY", API_KEY)
-                .GET()
-                .build();
+        List<BestProcessingTimeElement> allProcessingTimes = new ArrayList<>();
+        BestProcessingTimeElementRestMapper mapper = new BestProcessingTimeElementRestMapper();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        String responseBody = response.body();
-        ObjectMapper mapper = new ObjectMapper();
+        for (int dishId = 1; dishId <= 3; dishId++) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(new URI(baseUrl + "/dishes/" + dishId + "/bestProcessingTime"))
+                        .header("X-API-KEY", API_KEY)
+                        .GET()
+                        .build();
 
-        try {
-            if (responseBody.trim().startsWith("[")) {
-                List<ProcessingTimeResponseDTO> dtos = mapper.readValue(responseBody,
-                        new TypeReference<List<ProcessingTimeResponseDTO>>() {});
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                String responseBody = response.body();
 
-                return dtos.stream()
-                        .map(this::convertToBestProcessingTimeElement)
-                        .collect(Collectors.toList());
-            } else {
-                ProcessingTimeResponseDTO dto = mapper.readValue(responseBody, ProcessingTimeResponseDTO.class);
-                return List.of(convertToBestProcessingTimeElement(dto));
+                if (response.statusCode() == 200) {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    BestProcessingTimeRest processingTime = objectMapper.readValue(responseBody, BestProcessingTimeRest.class);
+
+                    for (BestProcessingTimeElementRest elementRest : processingTime.getBestProcessingTimes()) {
+                        BestProcessingTimeElement element = new BestProcessingTimeElement(
+                                null,
+                                elementRest.getSalesPoint(),
+                                elementRest.getDish(),
+                                elementRest.getPreparationDuration(),
+                                elementRest.getDurationUnit()
+                        );
+                        allProcessingTimes.add(element);
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Error fetching processing times for dish " + dishId + ": " + e.getMessage());
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse processing times response: " + responseBody, e);
         }
+
+        return allProcessingTimes;
     }
 
     private BestProcessingTimeElement convertToBestProcessingTimeElement(ProcessingTimeResponseDTO dto) {

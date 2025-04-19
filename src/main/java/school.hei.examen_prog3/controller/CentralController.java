@@ -12,7 +12,6 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/central")
 public class CentralController {
     private final CentralService centralService;
     private final ApiKeyManager apiKeyManager;
@@ -55,14 +54,17 @@ public class CentralController {
     }
 
     @PostMapping("/synchronization")
-    public ResponseEntity<String> synchronization(@RequestHeader("X-API-KEY") String apiKey)
-            throws IOException, InterruptedException, URISyntaxException {
-
+    public ResponseEntity<String> synchronization(@RequestHeader("X-API-KEY") String apiKey) {
         if (!apiKeyManager.isValidApiKey(apiKey)) {
             return ResponseEntity.status(401).build();
         }
 
-        centralService.synchronizeData();
-        return ResponseEntity.ok("Synchronization completed successfully");
+        try {
+            centralService.synchronizeData();
+            return ResponseEntity.ok("Synchronization completed successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body("Partial synchronization - some data may not have been updated: " + e.getMessage());
+        }
     }
 }
