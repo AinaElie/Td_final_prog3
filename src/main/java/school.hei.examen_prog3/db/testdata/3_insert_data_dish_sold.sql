@@ -1,0 +1,1 @@
+insert into dish_sold values (1, 'Hot dog', 5, 50000, 1), (2, 'Hot Dog', 8, 80000, 2) , (3, 'Omelette', 10, 100000, 1);

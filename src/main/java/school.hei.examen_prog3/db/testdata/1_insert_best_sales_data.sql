@@ -1,0 +1,1 @@
+insert into best_sales values (1, '2025-04-16T06:00:00');
