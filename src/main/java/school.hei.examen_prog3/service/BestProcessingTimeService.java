@@ -39,17 +39,17 @@ public class BestProcessingTimeService {
         BestProcessingTime bestProcessingTime = salesPoint.getBestProcessingTimesPDV();
 
         List<BestProcessingTimeElement> filteredElements = bestProcessingTime.getBestProcessingTimes().stream()
-                .filter(e -> e.getDish().equalsIgnoreCase(dishId))
+                .filter(e -> e.getDish().equalsIgnoreCase(getDishNameById(dishId)))
                 .collect(Collectors.toList());
+
+        if (filteredElements.isEmpty()) {
+            return new BestProcessingTimeRest(bestProcessingTime.getUpdateAt(), List.of());
+        }
 
         Comparator<BestProcessingTimeElement> comparator = switch (calculationMode.toUpperCase()) {
             case "MINIMUM" -> Comparator.comparingDouble(BestProcessingTimeElement::getPreparationDuration);
             case "MAXIMUM" -> Comparator.comparingDouble(BestProcessingTimeElement::getPreparationDuration).reversed();
-            default -> Comparator.comparingDouble(e -> {
-                // For average, we'd need to calculate averages per sales point
-                // This is simplified - in real implementation would need proper averaging logic
-                return e.getPreparationDuration();
-            });
+            default -> Comparator.comparingDouble(BestProcessingTimeElement::getPreparationDuration);
         };
 
         filteredElements.sort(comparator);
@@ -57,18 +57,24 @@ public class BestProcessingTimeService {
         DurationUnit targetUnit = DurationUnit.valueOf(durationUnit.toUpperCase());
         filteredElements.forEach(e -> convertDuration(e, targetUnit));
 
-        // Limit results
         if (filteredElements.size() > top) {
             filteredElements = filteredElements.subList(0, top);
         }
 
-        BestProcessingTime result = new BestProcessingTime(
+        return mapper.apply(new BestProcessingTime(
                 bestProcessingTime.getId(),
                 bestProcessingTime.getUpdateAt(),
                 filteredElements
-        );
+        ));
+    }
 
-        return mapper.apply(result);
+    private String getDishNameById(String dishId) {
+        return switch (dishId) {
+            case "1" -> "Hot dog";
+            case "2" -> "Omelette";
+            case "3" -> "Saucisse frit";
+            default -> "";
+        };
     }
 
     private void convertDuration(BestProcessingTimeElement element, DurationUnit targetUnit) {

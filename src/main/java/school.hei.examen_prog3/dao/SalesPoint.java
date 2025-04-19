@@ -25,17 +25,32 @@ public class SalesPoint {
     public BestSales getBestSalesPDV() throws IOException, InterruptedException {
         Instant start = Instant.now();
 
-        List<DishSold> salesPDV1 = getDishSoldFromPDV("https://ad67-197-158-81-35.ngrok-free.app/sales");
-        List<DishSold> salesPDV2 = getDishSoldFromPDV("https://ed2d-197-158-81-35.ngrok-free.app/sales");
+        List<DishSold> salesPDV1 = getDishSoldFromPDV("http://localhost:8080/sales");
+        List<DishSold> salesPDV2 = getDishSoldFromPDV("http://localhost:8082/sales");
+        
+        salesPDV1.forEach(dish -> {
+            double price = getDishPrice(dish.getDish());
+            dish.setTotal_amount(dish.getQuantitySold() * price);
+        });
 
-        if (salesPDV1.isEmpty() && salesPDV2.isEmpty()) {
-            throw new RuntimeException("Aucune donnée de vente récupérée des points de vente");
-        }
+        salesPDV2.forEach(dish -> {
+            double price = getDishPrice(dish.getDish());
+            dish.setTotal_amount(dish.getQuantitySold() * price);
+        });
 
         SalesElement salesElement1 = new SalesElement(1L, "Analamahitsy", salesPDV1);
         SalesElement salesElement2 = new SalesElement(2L, "Antanimena", salesPDV2);
 
         return new BestSales(1L, start, List.of(salesElement1, salesElement2));
+    }
+
+    private double getDishPrice(String dishName) {
+        return switch (dishName) {
+            case "Hot dog" -> 15000;
+            case "Omelette" -> 5000;
+            case "Saucisse frit" -> 3500;
+            default -> 0;
+        };
     }
 
     public BestProcessingTime getBestProcessingTimesPDV() throws IOException, InterruptedException, URISyntaxException {
@@ -80,7 +95,6 @@ public class SalesPoint {
 
         HttpClient client = HttpClient.newHttpClient();
         List<BestProcessingTimeElement> allProcessingTimes = new ArrayList<>();
-        BestProcessingTimeElementRestMapper mapper = new BestProcessingTimeElementRestMapper();
 
         for (int dishId = 1; dishId <= 3; dishId++) {
             try {
@@ -91,17 +105,16 @@ public class SalesPoint {
                         .build();
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                String responseBody = response.body();
 
                 if (response.statusCode() == 200) {
                     ObjectMapper objectMapper = new ObjectMapper();
-                    BestProcessingTimeRest processingTime = objectMapper.readValue(responseBody, BestProcessingTimeRest.class);
+                    BestProcessingTimeRest processingTime = objectMapper.readValue(response.body(), BestProcessingTimeRest.class);
 
                     for (BestProcessingTimeElementRest elementRest : processingTime.getBestProcessingTimes()) {
                         BestProcessingTimeElement element = new BestProcessingTimeElement(
                                 null,
                                 elementRest.getSalesPoint(),
-                                elementRest.getDish(),
+                                getDishNameById(String.valueOf(dishId)),
                                 elementRest.getPreparationDuration(),
                                 elementRest.getDurationUnit()
                         );
@@ -112,8 +125,16 @@ public class SalesPoint {
                 System.err.println("Error fetching processing times for dish " + dishId + ": " + e.getMessage());
             }
         }
-
         return allProcessingTimes;
+    }
+
+    private String getDishNameById(String dishId) {
+        return switch (dishId) {
+            case "1" -> "Hot dog";
+            case "2" -> "Saucisse frit";
+            case "3" -> "Omelette";
+            default -> "Unknown";
+        };
     }
 
     private BestProcessingTimeElement convertToBestProcessingTimeElement(ProcessingTimeResponseDTO dto) {

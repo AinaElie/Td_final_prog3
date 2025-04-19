@@ -5,6 +5,7 @@ import school.hei.examen_prog3.controller.mapper.BestSalesRestMapper;
 import school.hei.examen_prog3.controller.rest.BestSalesRest;
 import school.hei.examen_prog3.dao.SalesPoint;
 import school.hei.examen_prog3.dao.operations.BestSalesCrudOperations;
+import school.hei.examen_prog3.dao.operations.SalesElementCrudOperations;
 import school.hei.examen_prog3.model.BestSales;
 import school.hei.examen_prog3.model.SalesElement;
 
@@ -15,16 +16,16 @@ import java.util.stream.Collectors;
 @Service
 public class BestSalesService {
     private final BestSalesCrudOperations bestSalesCrudOperations;
-    private final SalesElementService salesElementService;
+    private final SalesElementCrudOperations salesElementCrudOperations;
     private final BestSalesRestMapper bestSalesRestMapper;
     private final SalesPoint salesPoint;
 
     public BestSalesService(BestSalesCrudOperations bestSalesCrudOperations,
-                            SalesElementService salesElementService,
+                            SalesElementCrudOperations salesElementCrudOperations,
                             BestSalesRestMapper bestSalesRestMapper,
                             SalesPoint salesPoint) {
         this.bestSalesCrudOperations = bestSalesCrudOperations;
-        this.salesElementService = salesElementService;
+        this.salesElementCrudOperations = salesElementCrudOperations;
         this.bestSalesRestMapper = bestSalesRestMapper;
         this.salesPoint = salesPoint;
     }
@@ -43,7 +44,9 @@ public class BestSalesService {
         BestSales savedBestSales = bestSalesCrudOperations.create(bestSales);
 
         for (SalesElement salesElement : bestSales.getSales()) {
-            salesElementService.createSalesElement(salesElement, savedBestSales.getId());
+            Long salesElementId = salesElementCrudOperations.create(salesElement, savedBestSales.getId());
+            salesElement.getDishSoldList().forEach(dish ->
+                    salesElementCrudOperations.createDishSold(dish, salesElementId));
         }
     }
 

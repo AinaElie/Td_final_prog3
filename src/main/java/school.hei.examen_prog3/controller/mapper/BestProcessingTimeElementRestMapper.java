@@ -25,11 +25,9 @@ public class BestProcessingTimeElementRestMapper implements Function<BestProcess
     @SneakyThrows
     public List<BestProcessingTimeElementRest> applyAll(List<BestProcessingTimeElement> bestProcessingTimeElements) {
         List<BestProcessingTimeElementRest> bestProcessingTimeElementRests = new ArrayList<>();
-
         for (BestProcessingTimeElement bestProcessingTimeElement : bestProcessingTimeElements) {
             bestProcessingTimeElementRests.add(this.apply(bestProcessingTimeElement));
         }
-
         return bestProcessingTimeElementRests;
     }
 }
