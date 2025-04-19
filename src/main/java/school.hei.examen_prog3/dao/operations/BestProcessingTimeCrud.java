@@ -1,6 +1,5 @@
 package school.hei.examen_prog3.dao.operations;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import school.hei.examen_prog3.dao.DatabaseConnection;
 import school.hei.examen_prog3.dao.mapper.BestProcessingTimeMapper;
@@ -57,13 +56,25 @@ public class BestProcessingTimeCrud {
         return bestProcessingTimes;
     }
 
-    public void create (BestProcessingTime bestProcessingTime) {
+    public BestProcessingTime create (BestProcessingTime bestProcessingTime) {
         String sql = "insert into processing_time (update_at) values (?)";
         try (Connection connection = databaseConnection.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setTimestamp(1, Timestamp.from(bestProcessingTime.getUpdateAt()));
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+        return bestProcessingTime;
+    }
+
+    public void deleteAll() {
+        String sql = "DELETE FROM processing_time";
+
+        try (Connection connection = databaseConnection.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete all processing times", e);
         }
     }
 }

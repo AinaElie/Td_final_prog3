@@ -61,21 +61,24 @@ public class SalesElementCrudOperations {
         return salesElements;
     }
 
-    public Long create (SalesElement salesElement, Long idBestSales) {
-        String sql = "insert into sales_element (sales_point, id_best_sales) values (?,?) on conflict do nothing returning id_sales_element";
+    public Long create(SalesElement salesElement, Long idBestSales) {
+        String sql = "insert into sales_element (sales_point, id_best_sales) values (?,?) " +
+                "returning id_sales_element";
         Long id = null;
 
-        try (Connection connection = databaseConnection.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
             statement.setString(1, salesElement.getSalesPoint());
-            statement.setDouble(2, idBestSales);
-            statement.executeUpdate();
+            statement.setLong(2, idBestSales);
+
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
+                if (resultSet.next()) {
                     id = resultSet.getLong("id_sales_element");
                 }
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to create SalesElement", e);
         }
 
         return id;

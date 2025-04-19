@@ -63,16 +63,21 @@ public class DishSoldCrudOperations {
     }
 
     public void create(DishSold dishSold, Long idSalesElement) {
-        String sql = "insert into dish_sold values (?,?,?,?) on conflict do nothing ";
+        String sql = "insert into dish_sold (id_dish_sold, dish_name, quantity, total_amount, id_sales_element) " +
+                "values (?, ?, ?, ?, ?) ON CONFLICT (id_dish_sold) DO NOTHING";
 
-        try (Connection connection = databaseConnection.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, dishSold.getDish());
-            statement.setDouble(2, dishSold.getQuantitySold());
-            statement.setDouble(3, dishSold.getTotal_amount());
-            statement.setLong(4, idSalesElement);
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setLong(1, dishSold.getId());
+            statement.setString(2, dishSold.getDish());
+            statement.setDouble(3, dishSold.getQuantitySold());
+            statement.setDouble(4, dishSold.getTotal_amount());
+            statement.setLong(5, idSalesElement);
+
             statement.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to create DishSold: " + e.getMessage(), e);
         }
     }
 }

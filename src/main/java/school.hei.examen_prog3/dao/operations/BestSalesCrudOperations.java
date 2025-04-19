@@ -69,4 +69,15 @@ public class BestSalesCrudOperations {
 
         return this.findByUpdateAt(bestSales.getUpdateAt());
     }
+
+    public void deleteAll() {
+        String sql = "DELETE FROM best_sales";
+
+        try (Connection connection = databaseConnection.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete all best sales", e);
+        }
+    }
 }
