@@ -38,12 +38,10 @@ public class BestProcessingTimeService {
 
         BestProcessingTime bestProcessingTime = salesPoint.getBestProcessingTimesPDV();
 
-        // Filter by dish ID
         List<BestProcessingTimeElement> filteredElements = bestProcessingTime.getBestProcessingTimes().stream()
-                .filter(e -> e.getId().toString().equals(dishId))
+                .filter(e -> e.getDish().equalsIgnoreCase(dishId))
                 .collect(Collectors.toList());
 
-        // Apply calculation mode
         Comparator<BestProcessingTimeElement> comparator = switch (calculationMode.toUpperCase()) {
             case "MINIMUM" -> Comparator.comparingDouble(BestProcessingTimeElement::getPreparationDuration);
             case "MAXIMUM" -> Comparator.comparingDouble(BestProcessingTimeElement::getPreparationDuration).reversed();
@@ -56,7 +54,6 @@ public class BestProcessingTimeService {
 
         filteredElements.sort(comparator);
 
-        // Convert duration units if needed
         DurationUnit targetUnit = DurationUnit.valueOf(durationUnit.toUpperCase());
         filteredElements.forEach(e -> convertDuration(e, targetUnit));
 
@@ -95,9 +92,8 @@ public class BestProcessingTimeService {
         clearData();
 
         BestProcessingTime bestProcessingTime = salesPoint.getBestProcessingTimesPDV();
-
         BestProcessingTime savedProcessingTime = bestProcessingTimeCrud.create(bestProcessingTime);
-        
+
         for (BestProcessingTimeElement element : bestProcessingTime.getBestProcessingTimes()) {
             elementCrud.create(element, savedProcessingTime.getId());
         }

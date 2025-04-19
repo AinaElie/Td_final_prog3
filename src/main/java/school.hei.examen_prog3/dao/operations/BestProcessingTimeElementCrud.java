@@ -21,24 +21,6 @@ public class BestProcessingTimeElementCrud {
         this.databaseConnection = databaseConnection;
         this.bestProcessingTimeElementMapper = bestProcessingTimeElementMapper;
     }
-    //    public BestProcessingTimeElement findById (Long id) {
-//        String sql = "select time_element.id_time_element, time_element.sales_point, dish_name, time_element.duration, time_element.duration_unit from time_element where id_time_element = ?";
-//        BestProcessingTimeElement bestProcessingTimeElement = null;
-//
-//        try (Connection connection = databaseConnection.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
-//            statement.setLong(1, id);
-//
-//            try (ResultSet resultSet = statement.executeQuery()) {
-//                while (resultSet.next()) {
-//                    bestProcessingTimeElement = bestProcessingTimeElementMapper.apply(resultSet);
-//                }
-//            }
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//
-//        return bestProcessingTimeElement;
-//    }
 
     public List<BestProcessingTimeElement> findByIdProcessingTime(Long id) {
         List<BestProcessingTimeElement> bestProcessingTimeElements = new ArrayList<>();

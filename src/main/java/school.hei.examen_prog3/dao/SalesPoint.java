@@ -17,7 +17,6 @@ import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Repository
 public class SalesPoint {
@@ -28,6 +27,10 @@ public class SalesPoint {
 
         List<DishSold> salesPDV1 = getDishSoldFromPDV("https://ad67-197-158-81-35.ngrok-free.app/sales");
         List<DishSold> salesPDV2 = getDishSoldFromPDV("https://ed2d-197-158-81-35.ngrok-free.app/sales");
+
+        if (salesPDV1.isEmpty() && salesPDV2.isEmpty()) {
+            throw new RuntimeException("Aucune donnée de vente récupérée des points de vente");
+        }
 
         SalesElement salesElement1 = new SalesElement(1L, "Analamahitsy", salesPDV1);
         SalesElement salesElement2 = new SalesElement(2L, "Antanimena", salesPDV2);

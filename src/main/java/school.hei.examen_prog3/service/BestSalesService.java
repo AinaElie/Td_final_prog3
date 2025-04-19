@@ -6,6 +6,7 @@ import school.hei.examen_prog3.controller.rest.BestSalesRest;
 import school.hei.examen_prog3.dao.SalesPoint;
 import school.hei.examen_prog3.dao.operations.BestSalesCrudOperations;
 import school.hei.examen_prog3.model.BestSales;
+import school.hei.examen_prog3.model.SalesElement;
 
 import java.io.IOException;
 import java.util.List;
@@ -14,13 +15,16 @@ import java.util.stream.Collectors;
 @Service
 public class BestSalesService {
     private final BestSalesCrudOperations bestSalesCrudOperations;
+    private final SalesElementService salesElementService;
     private final BestSalesRestMapper bestSalesRestMapper;
     private final SalesPoint salesPoint;
 
     public BestSalesService(BestSalesCrudOperations bestSalesCrudOperations,
+                            SalesElementService salesElementService,
                             BestSalesRestMapper bestSalesRestMapper,
                             SalesPoint salesPoint) {
         this.bestSalesCrudOperations = bestSalesCrudOperations;
+        this.salesElementService = salesElementService;
         this.bestSalesRestMapper = bestSalesRestMapper;
         this.salesPoint = salesPoint;
     }
@@ -33,8 +37,14 @@ public class BestSalesService {
     }
 
     public void synchronize() throws IOException, InterruptedException {
+        clearData();
+
         BestSales bestSales = salesPoint.getBestSalesPDV();
-        bestSalesCrudOperations.create(bestSales);
+        BestSales savedBestSales = bestSalesCrudOperations.create(bestSales);
+
+        for (SalesElement salesElement : bestSales.getSales()) {
+            salesElementService.createSalesElement(salesElement, savedBestSales.getId());
+        }
     }
 
     public void clearData() {

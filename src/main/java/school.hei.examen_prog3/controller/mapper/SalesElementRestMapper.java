@@ -19,13 +19,20 @@ public class SalesElementRestMapper implements Function<SalesElement, SalesEleme
     @SneakyThrows
     @Override
     public SalesElementRest apply(SalesElement salesElement) {
-        DishSold dishSold = salesElement.getDishSoldList().getFirst();
+        // Calculate total quantities and amounts across all dishes
+        double totalQuantity = salesElement.getDishSoldList().stream()
+                .mapToDouble(DishSold::getQuantitySold)
+                .sum();
+
+        double totalAmount = salesElement.getDishSoldList().stream()
+                .mapToDouble(DishSold::getTotal_amount)
+                .sum();
 
         return new SalesElementRest(
                 salesElement.getSalesPoint(),
-                dishSold.getDish(),
-                dishSold.getQuantitySold(),
-                dishSold.getTotal_amount()
+                "Multiple Dishes", // or pick the top dish
+                totalQuantity,
+                totalAmount
         );
     }
 
