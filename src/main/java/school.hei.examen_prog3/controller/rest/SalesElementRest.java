@@ -1,10 +1,5 @@
 package school.hei.examen_prog3.controller.rest;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-
 import java.util.Objects;
 
 public class SalesElementRest {

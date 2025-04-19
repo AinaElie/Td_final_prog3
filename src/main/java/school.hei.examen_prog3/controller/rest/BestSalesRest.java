@@ -1,9 +1,6 @@
 package school.hei.examen_prog3.controller.rest;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
@@ -12,9 +9,6 @@ import java.util.Objects;
 public class BestSalesRest {
     private Instant updateAt;
     private List<SalesElementRest> sales;
-
-    public BestSalesRest() {
-    }
 
     public BestSalesRest(Instant updateAt, List<SalesElementRest> sales) {
         this.updateAt = updateAt;

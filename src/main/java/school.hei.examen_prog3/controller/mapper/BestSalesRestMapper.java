@@ -1,6 +1,5 @@
 package school.hei.examen_prog3.controller.mapper;
 
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Component;
 import school.hei.examen_prog3.controller.rest.BestSalesRest;
