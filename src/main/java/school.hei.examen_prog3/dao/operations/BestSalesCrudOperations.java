@@ -58,15 +58,33 @@ public class BestSalesCrudOperations {
     }
 
     public BestSales create(BestSales bestSales) {
-        String sql = "insert into best_sales (update_at) values (?)";
+        String sql = "insert into best_sales (update_at) values (?) RETURNING id_best_sales";
 
-        try (Connection connection = databaseConnection.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = databaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setTimestamp(1, Timestamp.from(bestSales.getUpdateAt()));
-            statement.executeUpdate();
+
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    Long id = rs.getLong("id_best_sales");
+                    bestSales.setId(id);
+                }
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
-        return this.findByUpdateAt(bestSales.getUpdateAt());
+        return bestSales;
+    }
+
+    public void deleteAll() {
+        String sql = "DELETE FROM best_sales";
+
+        try (Connection connection = databaseConnection.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete all best sales", e);
+        }
     }
 }

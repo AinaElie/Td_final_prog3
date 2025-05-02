@@ -15,10 +15,17 @@ public class DishSold {
 
     @JsonCreator
     public DishSold(
-            @JsonProperty("dish") String dish,
-            @JsonProperty("quantitySold") double quantitySold,
-            @JsonProperty("total_amount") double totalAmount
+            @JsonProperty("dishIdentifier") Long dishIdentifier,
+            @JsonProperty("dishName") String dishName,
+            @JsonProperty("quantitySold") double quantitySold
     ) {
+        this.id = dishIdentifier;
+        this.dish = dishName;
+        this.quantitySold = quantitySold;
+        this.total_amount = 0.0;
+    }
+
+    public DishSold(String dish, double quantitySold, double totalAmount) {
         this.dish = dish;
         this.quantitySold = quantitySold;
         this.total_amount = totalAmount;

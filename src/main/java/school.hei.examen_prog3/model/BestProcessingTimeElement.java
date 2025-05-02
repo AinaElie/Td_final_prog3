@@ -1,5 +1,8 @@
 package school.hei.examen_prog3.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Objects;
 
 public class BestProcessingTimeElement {
@@ -9,7 +12,15 @@ public class BestProcessingTimeElement {
     private double preparationDuration;
     private DurationUnit durationUnit;
 
-    public BestProcessingTimeElement(Long id, String salesPoint, String dish, double preparationDuration, DurationUnit durationUnit) {
+    public BestProcessingTimeElement() {}
+
+    @JsonCreator
+    public BestProcessingTimeElement(
+            @JsonProperty("id") Long id,
+            @JsonProperty("salesPoint") String salesPoint,
+            @JsonProperty("dish") String dish,
+            @JsonProperty("preparationDuration") double preparationDuration,
+            @JsonProperty("durationUnit") DurationUnit durationUnit) {
         this.id = id;
         this.salesPoint = salesPoint;
         this.dish = dish;

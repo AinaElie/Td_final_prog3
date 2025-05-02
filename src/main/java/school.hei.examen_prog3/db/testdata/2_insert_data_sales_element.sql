@@ -1,2 +1,2 @@
-insert into sales_element values (1, 'Anosibe', 1),
-                                 (2, 'Analakely', 1);
+insert into sales_element values (1, 'Analamahitsy', 1),
+                                 (2, 'Antanimena', 1);
