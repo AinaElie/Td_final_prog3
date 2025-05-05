@@ -44,6 +44,7 @@ public class BestProcessingTimeElementCrud {
     }
 
     public List<BestProcessingTimeElement> findByIdProcessingTime(Long id) {
+        System.out.println("Looking for elements with processing time ID: " + id);
         String sql = "SELECT * FROM time_element WHERE id_processing_time = ?";
         List<BestProcessingTimeElement> elements = new ArrayList<>();
 
@@ -65,6 +66,8 @@ public class BestProcessingTimeElementCrud {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to find elements by processing time id", e);
         }
+
+        System.out.println("Found " + elements.size() + " elements");
         return elements;
     }
 }

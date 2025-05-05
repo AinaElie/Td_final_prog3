@@ -55,18 +55,25 @@ public class SalesPoint {
         Instant start = Instant.now();
         List<BestProcessingTimeElement> allProcessingTimes = new ArrayList<>();
 
+        System.out.println("Starting PDV data collection...");
+
         try {
-            allProcessingTimes.addAll(getProcessingTimesFromPDV("http://localhost:8080", "Analamahitsy"));
+            List<BestProcessingTimeElement> pdv1Times = getProcessingTimesFromPDV("http://localhost:8080", "Analamahitsy");
+            System.out.println("Got " + pdv1Times.size() + " elements from PDV1");
+            allProcessingTimes.addAll(pdv1Times);
         } catch (Exception e) {
             System.err.println("Error fetching from PDV1: " + e.getMessage());
         }
 
         try {
-            allProcessingTimes.addAll(getProcessingTimesFromPDV("http://localhost:8082", "Antanimena"));
+            List<BestProcessingTimeElement> pdv2Times = getProcessingTimesFromPDV("http://localhost:8082", "Antanimena");
+            System.out.println("Got " + pdv2Times.size() + " elements from PDV2");
+            allProcessingTimes.addAll(pdv2Times);
         } catch (Exception e) {
             System.err.println("Error fetching from PDV2: " + e.getMessage());
         }
 
+        System.out.println("Total elements collected: " + allProcessingTimes.size());
         return new BestProcessingTime(1L, start, allProcessingTimes);
     }
 

@@ -41,9 +41,21 @@ public class BestProcessingTimeService {
         BestProcessingTime latest = bestProcessingTimeCrud.findLatest()
                 .orElseThrow(() -> new RuntimeException("No processing time data available"));
 
+        System.out.println("Latest processing time record: " + latest);
+        System.out.println("Total elements before filtering: " + latest.getBestProcessingTimes().size());
+
+        String expectedDishName = getDishNameById(dishId);
+        System.out.println("Looking for dish: " + expectedDishName);
+
         List<BestProcessingTimeElement> filteredElements = latest.getBestProcessingTimes().stream()
-                .filter(e -> e.getDish().equalsIgnoreCase(getDishNameById(dishId)))
+                .filter(e -> {
+                    System.out.println("Checking element with dish: " + e.getDish());
+                    return e.getDish() != null &&
+                            e.getDish().toLowerCase().contains(expectedDishName.toLowerCase());
+                })
                 .collect(Collectors.toList());
+
+        System.out.println("Elements after filtering: " + filteredElements.size());
 
         DurationUnit targetUnit = DurationUnit.valueOf(durationUnit.toUpperCase());
         filteredElements.forEach(e -> convertDuration(e, targetUnit));
@@ -53,7 +65,7 @@ public class BestProcessingTimeService {
         if (filteredElements.size() > top) {
             filteredElements = filteredElements.subList(0, top);
         }
-        
+
         return new BestProcessingTimeRest(
                 latest.getUpdateAt(),
                 bestProcessingTimeElementRestMapper.applyAll(filteredElements)
@@ -70,9 +82,9 @@ public class BestProcessingTimeService {
 
     private String getDishNameById(String dishId) {
         return switch (dishId) {
-            case "1" -> "Hot dog";
-            case "2" -> "Omelette";
-            case "3" -> "Saucisse frit";
+            case "1" -> "Dish 1";
+            case "2" -> "Dish 2";
+            case "3" -> "Dish 3";
             default -> throw new IllegalArgumentException("Unknown dish id: " + dishId);
         };
     }
